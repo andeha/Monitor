@@ -26,3 +26,15 @@ The startup code in **monitor** and **nomonitor** resides starting at 0xBFC0000,
 Your kernel is to be located between 0x80000000 and 0x9FFFFFFF; with code starting from 0x9D000000 and the kernels' DMA-able data from 0xA0000000. 
 
 Global variables and static local variables resides in the interval starting from 0xE0000000 up to but not including 0xFF200200.
+
+## Interrupts
+ 
+The function processing interrupts must have the prototype `extern "C" void Isr();` as in 
+
+    extern "C" void Isr() {
+        switch (INTSTAT_VEC_6͞ & 🔎(INTSTAT)) {
+        case  0: break; // Core Timer Interrupt
+        case  1: break; // Core Software Interrupt 0
+        case 96: break; // Real Time Clock
+    ...
+    
