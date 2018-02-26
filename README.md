@@ -9,6 +9,16 @@
 [af333]: https://github.com/andeha/Monitor/Releases/monitor_PIC32MX470F512L_af333.hex
 [c381b]: https://github.com/andeha/Monitor/Releases/nomonitor_MX_c381b.hex
 
+## How to Connect a PIC32 to a PC or a Mac 
+
+To interact with your USB-port equipped PIC32-board via a USB cable connected to your computer, do the following:
+	
+On a **Mac**, start a VT100 terminal emulator with something similar to:
+
+    prompt% screen /dev/cu.usbserial-A506K4XV 600
+
+On a **PC**, use hyperterm or putty. 
+
 ## About the Startup
 
 The startup code in **monitor** and **nomonitor** resides starting at 0xBFC0000, with a single entry interrupt vector at 0x80000000 and a stack that that grows downwards from 0xA001FFFC to 0xA0008000. 
