@@ -81,10 +81,6 @@ Other useful targets available in the build file are:
     terminal$ ninja syms # All symbols on stdout 
     terminal$ ninja source # Ftns, virt. addr. and obj code.
 
-## Traditional Platform Features 
-
-`Monitor` contains an implementation of `malloc` and `free` that can be called from your application.
-
 ## MIPS Assembly in Source Files
 
 The following example illustrates how to include assembly code in your source files:
@@ -112,6 +108,10 @@ The following example illustrates how to include assembly code in your source fi
         entry();
     }
  
+## Traditional Platform Features 
+
+`Monitor` contains an implementation of `malloc` and `free` that can be called from your application.
+
 ## Interrupts
  
 The interrupt handler function must have the signature  `extern "C" void Isr();` as in 
@@ -124,4 +124,4 @@ The interrupt handler function must have the signature  `extern "C" void Isr();`
         ... } }
         
 
-See Table 7-1 *INTERRUPT IRQ, VECTOR AND BIT LOCATION* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
+See Table 7-1, *'INTERRUPT IRQ, VECTOR AND BIT LOCATION'* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
