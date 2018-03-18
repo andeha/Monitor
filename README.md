@@ -1,25 +1,51 @@
 # A MIPS/PIC32 Monitor Program
 
-**This program helps you** upload your programs, interact with your chip, insert hardware breakpoints and see how control flows when your program is run.
+**This program helps you** upload programs, interact with a chip, find errors in your program and understand how control flows when a program is running.
 
 [**monitor_PIC32MX470F512L.hex**][af333][^1] Enables the chips' UART5 where port RF13 (pin 39) is U5TX, and port RF12 (pin 40) is U5RX. This binary can upload programs up to 64 kB of size. 
 
-[**nomonitor_MX.hex**][c381b] The same startup code as the application above, but without its debugging capabilities.
+[**nomonitor_MX.hex**][c381b] The same startup code as the application above, but without any monitor capabilities. Suitable for concatenation with your production code. 
 
 [af333]: https://github.com/andeha/Monitor/Releases/monitor_PIC32MX470F512L_af333.hex
 [c381b]: https://github.com/andeha/Monitor/Releases/nomonitor_MX_c381b.hex
 
-## How to Connect a PIC32 to a PC or a Mac 
+## Connecting the Chip to a PC or a Mac 
 
-To interact with your USB-port equipped PIC32-board via a USB cable connected to your computer, do the following:
+To interact with a USB-port equipped PIC32-board via a USB cable connected to your computer, do the following:
 	
 On a **Mac**, start a VT100 terminal emulator with something similar to:
 
     prompt% screen /dev/cu.usbserial-A506K4XV 600
 
-On a **PC**, use hyperterm or putty. 
+On a **PC**, use hyperterm or putty.
 
-## About the Startup
+## Exploring the PIC32 Using Monitor.hex
+
+To view the current value in a memory cell (`peek`), type 
+
+    Welcome to your MIPS/PIC32 Monitor
+    ...
+    ? 0x12341234
+    Address 0x12341234 contains 0x00000001 
+
+To alter the value in a memory cell (`poke`), write
+
+    ! 0x12341234 0x00000002
+    Poke 0x12341234 from 0x00000001 to 0x00000002
+
+To add a breakpoint, enter `* 0x12341234`.
+
+## Loading Programs
+
+To load software onto the PIC32, copy its [Intel Hex] (https://en.wikipedia.org/wiki/Intel_HEX) file into the paste buffer and paste the content into your `screen` session with `C-a` followed by `]` as in:
+
+    terminal$ pbcopy < mykernel.hex
+    terminal$ screen /dev/cu.usbserial-A506K4XV 600
+        Press C-a ] to load the program and C-a c to exit.        
+
+To capture your `screen` session on file, press `C-a` and `>`.
+
+## About Startup
 
 The startup code in **monitor** and **nomonitor** resides starting at 0xBFC0000, with a single entry interrupt vector at 0x80000000 and a stack that that grows downwards from 0xA001FFFC to 0xA0008000. 
 
@@ -27,14 +53,75 @@ Your kernel is to be located between 0x80000000 and 0x9FFFFFFF; with code starti
 
 Global variables and static local variables resides in the interval starting from 0xE0000000 up to but not including 0xFF200200.
 
+## Compiling Using [LLVM](http://www.llvm.org) 5 and Later
+
+To compile a program, normally you type something similar to 
+
+    terminal$ clang-5.0 -g -mlong-calls -target mipsel -mips32r2 --std=c++17 -fblocks -c main.cpp -o main.o
+    
+    terminal$ ld.lld -T Loadscripts/PIC32MX795F512L.ld -o mykernel.elf main.o Specifics/PIC32MX795F512L.s start.o
+    
+    terminal$ llvm2pic32 mykernel.elf > mykernel.hex
+
+Note that your kernel must contain a function having the signature  `int main() { ... }`.
+
+To understand where in the virtual address space a symbol is defined, enter:
+
+    terminal$ ninja syms | egrep 'T.*main' 
+    9d000c40 T main
+
+Other useful targets available in the build file are: 
+
+    terminal$ ninja size
+    text      data    bss   dec      hex filename
+    57272     836     768   58876    e5fcmonitor_PIC32MX795F512L
+    
+    terminal$ ninja sect # Outputs all available sections
+    terminal$ ninja list # The list file to stdout
+    terminal$ ninja syms # All symbols on stdout 
+    terminal$ ninja source # Ftns, virt. addr. and obj code.
+
+## Traditional Platform Features 
+
+`Monitor` contains an implementation of `malloc` and `free` that can be called from your application.
+
+## MIPS Assembly in Source Files
+
+The following example illustrates how to include assembly code in your source files:
+
+    #include <Freeform.h>
+    
+    int main()
+    {
+        static Basicblocks flash_1_1[] = {
+            // TRISB @ 0xbf886040 ⬷ 0, i.e PORTB all output.
+            MIPS_LUI (8, 0), 
+            MIPS_ORI (8, 8, 0),
+            MIPS_LUI (9, 0xbf88), 
+            MIPS_SW (8u, 24640u, 9u), 
+        // flash_again:
+            MIPS_MFC0 (8u, 9u, 0u), // $8 ⬷ c0_count 
+            MIPS_LUI (9, 0xbf88), 
+            // LATB @ 0xbf886060 ⬷ count
+            MIPS_SW (8u, 24672u, 9u), 
+            MIPS_B (NEG16(4<<2))
+        };
+
+        typedef void (*Entry)();
+        void (*entry)() = (Entry)flash_1_1;
+        entry();
+    }
+ 
 ## Interrupts
  
-The function processing interrupts must have the prototype `extern "C" void Isr();` as in 
+The interrupt handler function must have the signature  `extern "C" void Isr();` as in 
 
     extern "C" void Isr() {
         switch (INTSTAT_VEC_6͞ & 🔎(INTSTAT)) {
         case  0: break; // Core Timer Interrupt
         case  1: break; // Core Software Interrupt 0
         case 96: break; // Real Time Clock
-    ...
-    
+        ... } }
+        
+
+See Table 7-1 *INTERRUPT IRQ, VECTOR AND BIT LOCATION* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
