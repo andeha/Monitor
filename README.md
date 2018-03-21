@@ -2,12 +2,12 @@
 
 **This program helps you** upload programs, interact with a chip, find errors in your program and understand how control flows when a program is running.
 
-[**monitor_PIC32MX470F512L.hex**][af333][^1] Enables the chips' UART5 where port RF13 (pin 39) is U5TX, and port RF12 (pin 40) is U5RX. This binary can upload programs up to 64 kB of size. 
+[**monitor_PIC32MX470F512L.hex**][monitor_0a1f92][^1] Enables the chips' UART5 where port RF13 (pin 39) is U5TX, and port RF12 (pin 40) is U5RX. This binary can upload programs up to 64 kB of size. 
 
-[**nomonitor_MX.hex**][c381b] The same startup code as the application above, but without any monitor capabilities. Suitable for concatenation with your production code. 
+[**nomonitor_MX.hex**][nomonitor_0a1f92] The same startup code as the application above, but without any monitor capabilities. Suitable for concatenation with your production code. 
 
-[af333]: https://github.com/andeha/Monitor/Releases/monitor_PIC32MX470F512L_af333.hex
-[c381b]: https://github.com/andeha/Monitor/Releases/nomonitor_MX_c381b.hex
+[monitor_0a1f92]: https://github.com/andeha/Monitor/Releases/monitor_PIC32MX795F512L_0ab1f92.hex
+[nomonitor_0a1f92]: https://github.com/andeha/Monitor/Releases/nomonitor_MX_0a1f92.hex
 
 ## Connecting the Chip to a PC or a Mac 
 
@@ -33,11 +33,11 @@ To alter the value in a memory cell (`poke`), write
     ! 0x12341234 0x00000002
     Poke 0x12341234 from 0x00000001 to 0x00000002
 
-To add a breakpoint, enter `* 0x12341234`.
+To interactively add a breakpoint, enter `* 0x12341234`.
 
 ## Loading Programs
 
-To load software onto the PIC32, copy its [Intel Hex] (https://en.wikipedia.org/wiki/Intel_HEX) file into the paste buffer and paste the content into your `screen` session with `C-a` followed by `]` as in:
+To load software onto the PIC32, copy its [Intel Hex](https://en.wikipedia.org/wiki/Intel_HEX) file into the paste buffer and paste the content into your `screen` session with `C-a` followed by `]` as in:
 
     terminal$ pbcopy < mykernel.hex
     terminal$ screen /dev/cu.usbserial-A506K4XV 600
@@ -110,9 +110,16 @@ The following example illustrates how to include assembly code in your source fi
  
 ## Traditional Platform Features 
 
-`Monitor` contains an implementation of `malloc` and `free` that can be called from your application.
+`Monitor` contains non-threadsafe implementations of `malloc` at 0x9d009650 and `free` at 0x9d00521c that can be called from your application with something similar to:
 
-## Interrupts
+    MIPS_LUI (30, 40192)
+    MIPS_ORI (30, 30, 21020)
+    MIPS_J   (30)
+    MIPS_NOP
+
+There is also a `Disassemble` available at `0x9d001fe0`. See `Monitor.h` for details.
+
+## Interrupts and System Calls
  
 The interrupt handler function must have the signature  `extern "C" void Isr();` as in 
 
@@ -125,3 +132,7 @@ The interrupt handler function must have the signature  `extern "C" void Isr();`
         
 
 See Table 7-1, *'INTERRUPT IRQ, VECTOR AND BIT LOCATION'* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
+
+And `syscall` handler has the following weak and therefore overridable prototype:
+
+    extern "C" void Syscall(__builtin_uint_t arg);

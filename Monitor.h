@@ -8,11 +8,13 @@
 
 #pragma mark Snapshot from Pinecone
 
+#define NULL 0
+
 typedef unsigned char uint8_t;
 
 #ifdef  __mips__
-typedef unsigned long       uint32_t;
-typedef long                int32_t;
+typedef unsigned long long  uint32_t;
+typedef long long           int32_t;
 typedef uint32_t            __builtin_uint_t;
 typedef int32_t             __builtin_int_t;
 #elif __x86_64__
@@ -247,7 +249,7 @@ MACRO void 🔧Debug( __builtin_uint_t mask, __builtin_uint_t value) {
 MACRO bool HasDCR() { return !(DEBUG_NODCR & 🔎Debug()); }
 MACRO bool HasSingleStep() { return !(DEBUG_NOSST & 🔎Debug()); }
 
-#define DCR 0xFF300000 // Debug Control Register
+#define DCR 0xFFFFFFFFFF200000 // Debug Control Register
 
 BITMASK(uint32_t) { // DCR
     DCR_ENM     = 0b1000000000000000000000000000000, // Endianess in Kernel and Debug mode
@@ -268,7 +270,7 @@ BITMASK(uint32_t) { // DCR
 
 // Instruction Breakpoints 0-15
 
-#define IBS 0xFF301000 // Instruction Breakpoint Status
+#define IBS 0xFFFFFFFFFF301000 // Instruction Breakpoint Status
 
 BITMASK(uint32_t) { // IBS
     IBS_ASIDSUP = 0b1000000000000000000000000000000, // Indicates that ASID compare is supported in instruction breakpoints
@@ -315,7 +317,7 @@ MACRO __builtin_uint_t InstBrk() { return DCR_IB & 🔎(DCR) ? 🔎MaskandShift(
 
 // Data Breakpoints 0-15
 
-#define DBS 0xFF302000 // Data Breakpoint Status
+#define DBS 0xFFFFFFFFFF302000 // Data Breakpoint Status
 
 BITMASK(uint32_t) { // DBS
     DBS_ASID   = 0b01000000000000000000000000000000, // Indicates that ASID compares are supported in data breakpoints.
@@ -372,7 +374,7 @@ MACRO __builtin_uint_t DataBrk() { return DCR_DB & 🔎(DCR) ? 🔎MaskandShift(
 
 #pragma mark Complex Breakpoint
 
-#define CBTC 0xFF308000 // Complex Break and Triggerpoint Control
+#define CBTC 0xFFFFFFFFFF308000 // Complex Break and Triggerpoint Control
 
 BITMASK(uint32_t) { // CBTC
     CBTC_STMode = 0b100000000, // Stopwatch Timer Mode
@@ -398,8 +400,8 @@ BITMASK(uint32_t) { // PrCndAIxorDx
 
 #pragma mark Stopwatch Timer Control
 
-#define STCtl 0xFF308900 // Stopwatch Timer Control
-#define STCnt 0xFF308908 // Stopwatch Timer Count
+#define STCtl 0xFFFFFFFFFF308900 // Stopwatch Timer Control
+#define STCnt 0xFFFFFFFFFF308908 // Stopwatch Timer Count
 
 BITMASK(uint32_t) { // STCtl
     STCtl_StopChan1_4͞  = 0b000000111100000000000000,
@@ -431,7 +433,7 @@ BITMASK(uint32_t) { // ITCBWRP
     ITCBWRP_ADDR_3͞1͞ = 0b01111111111111111111111111111111  // Byte address of the next on-chip trace memory word to be written
 };
 
-#define IFCTL        0xFF303FC0 // iFlowTrace Control Block Control/Status
+#define IFCTL 0xFFFFFFFFFF303FC0 // iFlowTrace Control Block Control/Status
 
 BITMASK(uint32_t) { // IFCTL
     IFCTL_CYC      = 0b100000000000000, // Delta Cycle Mode
@@ -448,15 +450,15 @@ BITMASK(uint32_t) { // IFCTL
     IFCTL_ON       = 0b000000000000001  // Software control of trace collection
 };
 
-#define ITCBADDR       0xFF303FC8 // iFlowTrace Control Block Trace write address pointer
+#define ITCBADDR 0xFFFFFFFFFF303FC8 // iFlowTrace Control Block Trace write address pointer
 
 BITMASK(uint32_t) { // ITCBADDR
     ITCBADDR_Wrap        = 0b10000000000000000000000000000000, // Trace wrapped
     ITCBADDR_Waddr_3͞1͞    = 0b01111111111111111111111111111111  // When trace concludes, WAddr contains the first address in trace memory not yet written.
 };
 
-#define ITrigiFlowTrcEn 0xFF303FD0 // Instruction-break Trigger iFlowtrace Enable register
-#define DTrigiFlowTrcEn 0xFF303FD8 // Data-break Trigger iFlowtrace Enable register
+#define ITrigiFlowTrcEn 0xFFFFFFFFFF303FD0 // Instruction-break Trigger iFlowtrace Enable register
+#define DTrigiFlowTrcEn 0xFFFFFFFFFF303FD8 // Data-break Trigger iFlowtrace Enable register
 
 BITMASK(uint32_t) { // I/DTrigiFlowTrcEn
     TrigiFlowTrcEn_EN    = 0b10000000000000000000000000000, // Whether the trigger signal from EJTAG simple or complex instruction (data or tuple) break should trigger iFlowTrace tracing functions or not.
@@ -647,58 +649,7 @@ Disassemble(
     __builtin_uint_t value
 );
 
-MACRO void Sdbbp() { /* asm volatile("sdbbp 0"); */ asm volatile("mfc0 $8, $23, 0; or $8, 0x40000000; mtc0 $8, $23, 0"); }
-
-MACRO void Break() { asm volatile("break 0"); }
-
-MACRO void Debugger() {
-    
-    /* The DEBUG and DEBUG2 registers show the cause of the debug exception and
-     are used for setting up single-step operations. The Debug registers
-     indicate the internal state of the processor when the last Debug
-     exception or exception in Debug mode was taken, and they control optional
-     EJTAG Debug features. */
-    
-    __builtin_uint_t debug = 🔎Debug(); __builtin_uint_t debug2 = 🔎Debug2();
-    
-    if (DEBUG_DM & debug) { return; } // Not in debug mode
-    
-    if (DEBUG_DIB & debug) {
-        ; // Debug instruction break
-    } else if (DEBUG_DDBSIMPR & debug) {
-        ; // Data Break Store
-    } else if (DEBUG_DDBLIMPR & debug) {
-        ; // Data Break Load
-    } else if (DEBUG_DSS & debug) {
-        ; // Single-step
-    } else if (DEBUG_DBP & debug) {
-        ; // SDBBP
-    } else if (DEBUG_DIB & debug) {
-        ; // Debug Break
-    }
-    
-    if (DEBUG2_PRM & debug2) {
-        ; // Primed
-    } else if (DEBUG2_DQ & debug2) {
-        ; // Data Qualified
-    } else if (DEBUG2_TUP & debug2) {
-        ; // Tuple Breakpoint
-    } else if (DEBUG2_PACO & debug2) {
-        ; // Pass Counter
-    }
-    
-    // DEPC (Debug Exception Program Counter) holds the address at which
-    // processing resumes after a Debug Exception is serviced.
-    
-    __builtin_uint_t depc = 🔎Depc(); // The code field (10 bits) in SDDBP can be retrieved from the DEPC register.
-    
-    // DESAVE (Debug Exception Save) is a scratch pad register intended for use
-    // by the debug exception handler when saving general-purpose registers used
-    // during execution of the debug exception handler.
-    
-    __builtin_uint_t desave = 🔎Desave();
-    
-    // Allocate for a snapshot, take a picture and store pointer in DESAVE.
-}
+#define SDBBP(code) /* asm volatile("sdbbp " #code); */ asm volatile("mfc0 $8, $23, 0; or $8, 0x40000000; mtc0 $8, $23, 0");
+#define BREAK(code) asm volatile("break " #code);
 
 #endif

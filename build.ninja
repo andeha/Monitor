@@ -1,0 +1,70 @@
+# build.ninja -- Building the MIPS/PIC32 Monitor.
+
+optFlags = -g -mlong-calls 
+
+monitor = monitor_PIC32MX795F512L_
+nomonitor = nomonitor_MX_
+loadscript = Loadscripts/PIC32MX795F512L.ld
+
+# Monitor or nomonitor, that is one question.
+progname = $monitor
+
+objsDirectory = ./.objs/7703a311-5599-43ca-9992-eabcf7f86663_$progname
+path_tools = /Users/andershansson/Projects/Blackhat/Releases/Initial/Blackhat.app/Contents/MacOS
+sha1git = `git log -1 '--pretty=format:%h'`
+flags = $optFlagos -target mipsel -mips32r2 
+
+rule cc
+    command = $path_tools/clang-5.0 -DSHA1GIT=\"$sha1git\" -MD -MF $out.d $flags -fno-exceptions --std=c++17 -fblocks -c $in -o $out
+    depfile = $out.d
+    deps = gcc
+
+rule c
+    command = $path_tools/clang-5.0 -MD -MF $out.d $flags -fno-exceptions -fblocks -c $in -o $out
+    depfile = $out.d
+    deps = gcc
+    
+rule asm
+    command = $path_tools/clang-5.0 $flags -c $in -o $out
+
+rule link
+    command = $path_tools/ld.lld -T $loadscript -o $out $in; $path_tools/llvm2pic32 $progname > Releases/$progname$sha1git.hex; rm -rf $progname
+
+rule emitsize
+    command = $path_tools/llvm-size $progname
+
+rule emitsect
+    command = $path_tools/llvm-objdump -section-headers $progname
+#command = $path_tools/llvm-readobj -sections $progname
+
+rule emitlist
+    command = $path_tools/llvm-objdump -disassemble $progname
+
+# requires -g
+rule emitsource
+    command = $path_tools/llvm-objdump -source $progname
+
+rule emitdump
+    command = $path_tools/llvm-objdump -s $progname
+    
+rule emitsyms
+    command = $path_tools/llvm-nm $progname
+
+build $monitor: link $objsDirectory/main.o $objsDirectory/disasm.o $objsDirectory/debug.o $objsDirectory/isr.o $objsDirectory/malloc.o $objsDirectory/clang.o $objsDirectory/PIC32MX795F512L.o $objsDirectory/start.o
+build $nomonitor: link $objsDirectory/nomonitor.o $objsDirectory/malloc.o $objsDirectory/clang.o $objsDirectory/PIC32MX795F512L.o $objsDirectory/start.o
+build $objsDirectory/main.o: cc main.cpp
+build $objsDirectory/disasm.o: cc disasm.cpp
+build $objsDirectory/debug.o: cc debug.cpp
+build $objsDirectory/isr.o: cc isr.cpp
+build $objsDirectory/malloc.o: c malloc.c
+build $objsDirectory/clang.o: cc clang.cpp
+build $objsDirectory/PIC32MX795F512L.o: cc Specifics/PIC32MX795F512L.S
+build $objsDirectory/start.o: asm start.s
+build $objsDirectory/nomonitor.o: cc nomonitor.cpp
+build size: emitsize
+build sect: emitsect
+build list: emitlist
+build syms: emitsyms 
+build source: emitsource
+#build source: emitdump
+default $progname
