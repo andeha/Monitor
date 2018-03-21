@@ -17,7 +17,7 @@ On a **Mac**, start a VT100 terminal emulator with something similar to:
 
     prompt% screen /dev/cu.usbserial-A506K4XV 600
 
-On a **PC**, use hyperterm or putty.
+On a **PC**, install and use hyperterm or putty.
 
 ## Exploring the PIC32 Using Monitor.hex
 
@@ -75,8 +75,6 @@ To compile a program, normally you type something similar to
     
     terminal$ llvm2pic32 mykernel.elf > mykernel.hex
 
-Note that your kernel must contain a function having the signature  `int main() { ... }`.
-
 To understand where in the virtual address space a symbol is defined, enter:
 
     terminal$ ninja syms | egrep 'T.*main' 
@@ -128,10 +126,34 @@ The following example illustrates how to include assembly code in your source fi
     MIPS_ORI (30, 30, 21020)
     MIPS_J   (30)
 
-There is also a `Disassemble` available at `0x9d001fe0`. See `Monitor.h` for details.
+There is also a `Disassemble` available at `0x9d001fe0`. See `Monitor.h` for details. Other notable entry points are:
 
-## System Calls, Breaks and Interrupts
+|**Address**|**Description**|
+|--:|:--|
+`0x9d0003a0`|`uint32_t WriteReadSPI(uint32_t value)`
+`0x9d009520`|`int i2cStart()`
+`0x9d007ce8`|`int i2cStop()`
+`0x9d008bac`|`int i2cSendByte(uint8_t data)`
+
+callable in a similar way. 
+
+## Main Entry Point, Resets, Breaks, System Calls and Interrupts
  
+Note that your kernel must contain a function having the signature  `int main() { ... }` and that `main` is entered for multiple reasons:
+
+    int main() {
+        switch (🔎(RCON)) { // Primary cause before restart
+        case RCON_CMR:      // Configuration mismatch reset
+        case RCON_VREGS:    // Voltage Regulator Standby Enable
+        case RCON_EXTR:     // External Reset (MCLR) Pin Flag
+        case RCON_SWR:      // Software Reset Flag
+        case RCON_WDTO:     // Watchdog Timer Time-out Flag
+        case RCON_SLEEP:    // Wake From Sleep Flag
+        case RCON_IDLE:     // Wake From Idle Flag
+        case RCON_BOR:      // Brown-out Reset Flag
+        case RCON_POR:      // Power-on Reset Flag
+		; } }
+
 The `syscall` handler has the following weak and therefore overridable prototype:
 
     extern "C" void Syscall(__builtin_uint_t arg);
@@ -150,8 +172,8 @@ The interrupt handler function must have the signature  `extern "C" void Isr();`
         ... } 
         
         static Basicblocks bootisr_1_1[] = {
-            MIPS_LUI (30, 40192)
-            MIPS_ORI (30, 30, 21020)
+            MIPS_LUI (30, 0x9d00)
+            MIPS_ORI (30, 30, 0x2860)
             MIPS_J   (30)
         };
         typedef void (*BootISR)();
