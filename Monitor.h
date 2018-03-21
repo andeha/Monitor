@@ -225,13 +225,13 @@ BITMASK (uint32_t) { // UxBRG
 #define TRISACLR    0xBF886004
 #define TRISASET    0xBF886008
 #define TRISAINV    0xBF88600C
-/*  PORT is a register used to read the current state of the signal applied to	
+/*  PORT is the register used to read the current state of the signal applied to	
  the port I/O pins. */
 #define PORTA       0xBF886010
 #define PORTACLR    0xBF886014
 #define PORTASET    0xBF886018
 #define PORTAINV    0xBF88601C
-/*  LAT is a register used to write data to the port I/O pins. Reading the LATx
+/*  LAT is the register used to write data to the port I/O pins. Reading the LATx
  Latch register reads the last value written to the corresponding PORTor Latch 
  register. */ 
 #define LATA        0xBF886020
@@ -245,7 +245,7 @@ BITMASK (uint32_t) { // UxBRG
 
 /**
 
- Every I/O module register has a corresponding Clear (CLR), Set (SET) and
+'Every I/O module register has a corresponding Clear (CLR), Set (SET) and
  Invert (INV) register providing atomic bit manipulation. A value written to
  a SET, CLR or INV register effectively performs the implied operation,
  but only on the corresponding base register and only bits specified as
@@ -265,11 +265,10 @@ BITMASK (uint32_t) { // UxBRG
  Pins are configured as digital outputs by setting the corresponding TRIS
  register bits = 0. When configured as digital outputs, these pins are CMOS
  drivers or can be configured as open-drain outputs by setting the
- corresponding bits in the Open-Drain Configuration (ODCx) register.
+ corresponding bits in the Open-Drain Configuration (ODCx) register.'
 
 */
 
-#define PortRectifyAsInputs(X, tris)        (*((uint32_t *)TRIS##X##SET) = (uint16_t)(tris))
 #define PortSetDirection(X, tris)           (*((uint32_t *)TRIS##X) = (uint16_t)(tris))
 #define PortGetDirection(X)                 (TRIS##X)
 #define PortRead(X)                         (PORT##X)
@@ -286,6 +285,7 @@ BITMASK (uint32_t) { // UxBRG
 #define PortSetPinsAnalogIn(X, inputs)      (TRIS##X##SET = (unsigned int)(inputs),  ANSEL##X##SET = (unsigned int)(inputs))
 #define PortSetPinsDigitalOut(X, outputs)   (TRIS##X##CLR = (unsigned int)(outputs), ANSEL##X##CLR = (unsigned int)(outputs))
 #define PortSetPinsDigitalIn(X, inputs)     (TRIS##X##SET = (unsigned int)(inputs),  ANSEL##X##CLR = (unsigned int)(inputs))
+#define PortRectifyAsInputs(X, tris)        (*((uint32_t *)TRIS##X##SET) = (uint16_t)(tris))
 
 #pragma mark Config
 
