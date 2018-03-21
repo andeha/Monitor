@@ -33,7 +33,19 @@ To alter the value in a memory cell (`poke`), write
     ! 0x12341234 0x00000002
     Poke 0x12341234 from 0x00000001 to 0x00000002
 
+To toggle tracing, use
+    
+`\` Disable tracing (default)<br/>
+`|` Enable assembly trace<br/>
+`/` Enable source trace<br/>
+    
 To interactively add a breakpoint, enter `* 0x12341234`.
+
+To single-step, enter `&`.
+
+To continue execution after a breakpoint is hit, enter `&`.
+
+To display a snapshot of the values in the peripheral registers, write: `~`.
 
 ## Loading Programs
 
@@ -124,7 +136,7 @@ The `syscall` handler has the following weak and therefore overridable prototype
 
     extern "C" void Syscall(__builtin_uint_t arg);
 
-And the `break` handler is defined as follows: 
+The `break` handler is also overridable and defined as follows: 
     
      extern "C" void Break() { ; }
 
@@ -135,7 +147,17 @@ The interrupt handler function must have the signature  `extern "C" void Isr();`
         case  0: break; // Core Timer Interrupt
         case  1: break; // Core Software Interrupt 0
         case 96: break; // Real Time Clock
-        ... } }
+        ... } 
+        
+        static Basicblocks bootisr_1_1[] = {
+            MIPS_LUI (30, 40192)
+            MIPS_ORI (30, 30, 21020)
+            MIPS_J   (30)
+        };
+        typedef void (*BootISR)();
+        void (*bootISR)() = (BootISR)bootisr_1_1;
+        bootISR();
+    }
         
 
 See Table 7-1, *'INTERRUPT IRQ, VECTOR AND BIT LOCATION'* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
