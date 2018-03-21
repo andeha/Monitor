@@ -2,8 +2,8 @@
 
 optFlags = -g -mlong-calls 
 
-monitor = monitor_PIC32MX795F512L_
-nomonitor = nomonitor_MX_
+monitor = monitor_PIC32MX795F512L
+nomonitor = nomonitor_MX
 loadscript = Loadscripts/PIC32MX795F512L.ld
 
 # Monitor or nomonitor, that is one question.
@@ -28,7 +28,7 @@ rule asm
     command = $path_tools/clang-5.0 $flags -c $in -o $out
 
 rule link
-    command = $path_tools/ld.lld -T $loadscript -o $out $in; $path_tools/llvm2pic32 $progname > Releases/$progname$sha1git.hex; rm -rf $progname
+    command = $path_tools/ld.lld -T $loadscript -o $out $in; $path_tools/llvm2pic32 $progname > Releases/$progname\_$sha1git.hex
 
 rule emitsize
     command = $path_tools/llvm-size $progname

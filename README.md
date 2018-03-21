@@ -4,7 +4,7 @@
 
 [**monitor_PIC32MX470F512L.hex**][monitor_0a1f92] Enables the chips' UART5 where port RF13 (pin 39) is U5TX, and port RF12 (pin 40) is U5RX. This binary can upload programs up to 64 kB of size. 
 
-[**nomonitor_MX.hex**][nomonitor_0a1f92] The same startup code as the application above, but without any monitor capabilities. Suitable for concatenation with your production code. 
+[**nomonitor_MX.hex**][nomonitor_0a1f92] The same startup code as the application above, but without its monitoring capabilities. Suitable for concatenation with your production code. 
 
 [monitor_0a1f92]: https://github.com/andeha/Monitor/blob/master/Releases/monitor_PIC32MX795F512L_0ab1f92.hex
 [nomonitor_0a1f92]: https://github.com/andeha/Monitor/blob/master/Releases/nomonitor_MX_0ab1f92.hex
