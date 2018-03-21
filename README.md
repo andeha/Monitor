@@ -41,9 +41,9 @@ To toggle tracing, use
     
 To interactively add a breakpoint, enter `* 0x12341234`.
 
-To single-step, enter `&`.
+To single-step, enter `s`.
 
-To continue execution after a breakpoint is hit, enter `&`.
+To continue execution after a breakpoint is hit, enter `c`.
 
 To display a snapshot of the values in the peripheral registers, write: `~`.
 
