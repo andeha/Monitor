@@ -110,17 +110,24 @@ The following example illustrates how to include assembly code in your source fi
  
 ## Traditional Platform Features 
 
-`Monitor` contains non-threadsafe implementations of `malloc` at 0x9d009650 and `free` at 0x9d00521c that can be called from your application with something similar to:
+`Monitor` contains non-threadsafe implementations of `malloc` at `0x9d009650` and `free` at `0x9d00521c` that can be called from your application with something similar to:
 
     MIPS_LUI (30, 40192)
     MIPS_ORI (30, 30, 21020)
     MIPS_J   (30)
-    MIPS_NOP
 
 There is also a `Disassemble` available at `0x9d001fe0`. See `Monitor.h` for details.
 
-## Interrupts and System Calls
+## System Calls, Breaks and Interrupts
  
+The `syscall` handler has the following weak and therefore overridable prototype:
+
+    extern "C" void Syscall(__builtin_uint_t arg);
+
+And the `break` handler is defined as follows: 
+    
+     extern "C" void Break() { ; }
+
 The interrupt handler function must have the signature  `extern "C" void Isr();` as in 
 
     extern "C" void Isr() {
@@ -133,6 +140,4 @@ The interrupt handler function must have the signature  `extern "C" void Isr();`
 
 See Table 7-1, *'INTERRUPT IRQ, VECTOR AND BIT LOCATION'* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
 
-The `syscall` handler has the following weak and therefore overridable prototype:
 
-    extern "C" void Syscall(__builtin_uint_t arg);
