@@ -55,6 +55,10 @@ To load software onto the PIC32, copy its [Intel Hex](https://en.wikipedia.org/w
     terminal$ screen /dev/cu.usbserial-A506K4XV 600
         Press C-a ] to load the program and C-a c to exit.        
 
+To persist uploaded content into non-volatile flash, press `§`.
+
+To convert `monitor` into `nomonitor` and  fuse the chip so that its content is non-readable and non-modifiable, press `^`. (Only nomonitor?)
+
 To capture your `screen` session on file, press `C-a` and `>`.
 
 ## About Startup
@@ -126,16 +130,7 @@ The following example illustrates how to include assembly code in your source fi
     MIPS_ORI (30, 30, 21020)
     MIPS_J   (30)
 
-There is also a `Disassemble` available at `0x9d001fe0`. See `Monitor.h` for details. Other notable entry points are:
-
-|**Address**|**Description**|
-|--:|:--|
-`0x9d0003a0`|`uint32_t WriteReadSPI(uint32_t value)`
-`0x9d009520`|`int i2cStart()`
-`0x9d007ce8`|`int i2cStop()`
-`0x9d008bac`|`int i2cSendByte(uint8_t data)`
-
-callable in a similar way. 
+There is also a `Disassemble` available at `0x9d001fe0`. See `Monitor.h` for details. 
 
 ## Main Entry Point, Resets, Breaks, System Calls and Interrupts
  
