@@ -2,12 +2,12 @@
 
 **This program helps you** upload programs, interact with a chip, find errors in your program and understand how control flows when a program is running.
 
-[**monitor_PIC32MX470F512L.hex**][monitor_0a1f92][^1] Enables the chips' UART5 where port RF13 (pin 39) is U5TX, and port RF12 (pin 40) is U5RX. This binary can upload programs up to 64 kB of size. 
+[**monitor_PIC32MX470F512L.hex**][monitor_0a1f92] Enables the chips' UART5 where port RF13 (pin 39) is U5TX, and port RF12 (pin 40) is U5RX. This binary can upload programs up to 64 kB of size. 
 
 [**nomonitor_MX.hex**][nomonitor_0a1f92] The same startup code as the application above, but without any monitor capabilities. Suitable for concatenation with your production code. 
 
-[monitor_0a1f92]: https://github.com/andeha/Monitor/Releases/monitor_PIC32MX795F512L_0ab1f92.hex
-[nomonitor_0a1f92]: https://github.com/andeha/Monitor/Releases/nomonitor_MX_0a1f92.hex
+[monitor_0a1f92]: https://github.com/andeha/Monitor/blob/master/Releases/monitor_PIC32MX795F512L_0ab1f92.hex
+[nomonitor_0a1f92]: https://github.com/andeha/Monitor/blob/master/Releases/nomonitor_MX_0ab1f92.hex
 
 ## Connecting the Chip to a PC or a Mac 
 
@@ -133,6 +133,6 @@ The interrupt handler function must have the signature  `extern "C" void Isr();`
 
 See Table 7-1, *'INTERRUPT IRQ, VECTOR AND BIT LOCATION'* in [PIC32MX5XX/6XX/7XX Family Data Sheets](http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf) for a list of available interrupts.
 
-And `syscall` handler has the following weak and therefore overridable prototype:
+The `syscall` handler has the following weak and therefore overridable prototype:
 
     extern "C" void Syscall(__builtin_uint_t arg);
