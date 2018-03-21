@@ -113,22 +113,43 @@ MACRO __builtin_uint_t MaskAndShift(__builtin_uint_t value, __builtin_uint_t
 MACRO __builtin_uint_t 🔎MaskandShift(__builtin_uint_t var, __builtin_uint_t
     mask) { return MaskAndShift(🔎(var), mask); }
 
-MACRO void
-🔧(__builtin_uint_t var, __builtin_uint_t mask, __builtin_uint_t value) {
-    __builtin_uint_t shift = TrailingZeros(mask);
+MACRO void 🔧(__builtin_uint_t var, __builtin_uint_t mask, __builtin_uint_t 
+	value) { __builtin_uint_t shift = TrailingZeros(mask);
     __builtin_uint_t secured = value & (mask>>shift);
     *(__builtin_uint_t *)var &= ~mask;
     *(__builtin_uint_t *)var |= secured<<shift; }
 
-MACRO void
-🔧Toggle(__builtin_uint_t var, __builtin_uint_t msk, __builtin_uint_t val) {
-    __builtin_uint_t shift = TrailingZeros(msk);
+MACRO void 🔧Toggle(__builtin_uint_t var, __builtin_uint_t msk, 
+	__builtin_uint_t val) { __builtin_uint_t shift = TrailingZeros(msk);
     __builtin_uint_t secured = val & (msk>>shift);
     *(__builtin_uint_t *)var ^= secured<<shift; }
 
 extern "C" int printf(const char *eightBitFormat, ...);
 
 #pragma mark - MIPS/PIC32
+
+#pragma mark Resets (0xBF80F600)
+
+#define RCON    0xBF80F600 // Reset Control Register
+#define RSWRST  0xBF80F610 // Software Reset Register
+
+BITMASK (uint32_t) { // RCON
+    RCON_CMR    = 0b1000000000, // Configuration Mismatch Reset
+    RCON_VREGS  = 0b0100000000, // Voltage Regulator Standby Enable
+    RCON_EXTR   = 0b0010000000, // External Reset (MCLR) Pin Flag
+    RCON_SWR    = 0b0001000000, // Software Reset Flag
+    RCON_WDTO   = 0b0000010000, // Watchdog Timer Time-out Flag
+    RCON_SLEEP  = 0b0000001000, // Wake From Sleep Flag
+    RCON_IDLE   = 0b0000000100, // Wake From Idle Flag
+    RCON_BOR    = 0b0000000010, // Brown-out Reset Flag
+    RCON_POR    = 0b0000000001  // Power-on Reset Flag
+};
+
+BITMASK (uint32_t) { // RSWRST
+    RSWRST_SWRST = 0b0000000001 // Software Reset Trigger
+};
+
+#pragma mark Interrupts (0xBF881000)
 
 #define INTSTAT     0xBF881010 // Interrupt Status Register
 #define INTSTATCLR  0xBF881014
@@ -194,6 +215,77 @@ BITMASK (uint32_t) { // UxRXREG
 BITMASK (uint32_t) { // UxBRG
     UxBRG_BRG_1͞6͞ = 0b1111111111111111 // Baud Rate Divison
 };
+
+#pragma mark General purpose I/O PORT A - PORT G (0xBF886000, 0xBF886040, ...)
+
+/*  TRIS is a Data Direction or Tri-State Control register that determines 
+ whether a digital pin is an input or an output. '1' configures the 
+ corresponding I/O pin as an input. */ 
+#define TRISA       0xBF886000
+#define TRISACLR    0xBF886004
+#define TRISASET    0xBF886008
+#define TRISAINV    0xBF88600C
+/*  PORT is a register used to read the current state of the signal applied to	
+ the port I/O pins. */
+#define PORTA       0xBF886010
+#define PORTACLR    0xBF886014
+#define PORTASET    0xBF886018
+#define PORTAINV    0xBF88601C
+/*  LAT is a register used to write data to the port I/O pins. Reading the LATx
+ Latch register reads the last value written to the corresponding PORTor Latch 
+ register. */ 
+#define LATA        0xBF886020
+#define LATACLR     0xBF886024
+#define LATASET     0xBF886028
+#define LATAINV     0xBF88602C
+#define ODCA        0xBF886030
+#define ODCACLR     0xBF886034
+#define ODCASET     0xBF886038
+#define ODCAINV     0xBF88603C
+
+/**
+
+ Every I/O module register has a corresponding Clear (CLR), Set (SET) and
+ Invert (INV) register providing atomic bit manipulation. A value written to
+ a SET, CLR or INV register effectively performs the implied operation,
+ but only on the corresponding base register and only bits specified as
+ ‘1’ are modified. Bits specified as ‘0’ are not modified.
+
+ Pins are configured as digital inputs by setting the corresponding TRIS
+ register bits = 1. When configured as inputs, they are either TTL buffers or
+ Schmitt Triggers. Several digital pins share functionality with analog
+ inputs and default to the analog inputs at POR. Setting the corresponding
+ bit in the AD1PCFG register = 1 enables the pin as a digital pin.
+
+ Certain pins can be configured as analog inputs/outputs used by the ADC and
+ comparator modules. Setting the corresponding bits in the AD1PCFG register
+ equal to '0' enables the pin as an analog input pin and must have the
+ corresponding TRIS bit set = 1 (input).
+
+ Pins are configured as digital outputs by setting the corresponding TRIS
+ register bits = 0. When configured as digital outputs, these pins are CMOS
+ drivers or can be configured as open-drain outputs by setting the
+ corresponding bits in the Open-Drain Configuration (ODCx) register.
+
+*/
+
+#define PortRectifyAsInputs(X, tris)        (*((uint32_t *)TRIS##X##SET) = (uint16_t)(tris))
+#define PortSetDirection(X, tris)           (*((uint32_t *)TRIS##X) = (uint16_t)(tris))
+#define PortGetDirection(X)                 (TRIS##X)
+#define PortRead(X)                         (PORT##X)
+#define PortReadAndMask(port,mask)          PortRead(port) & mask
+#define PortWrite(X, lat)                   (*((uint32_t *)LAT##X) = (uint32_t)(lat))
+#define PortSetBits(X, bits)                (*((uint32_t *)LAT##X##SET) = (uint32_t)(bits))
+#define PortClearBits(X, bits)              (*((uint32_t *)LAT##X##CLR) = (uint32_t)(bits))
+#define PortToggleBits(X, bits)             (*((uint32_t *)LAT##X##INV) = (uint32_t)(bits))
+#define PortOpenDrainOpen(X, bits)          (ODC##X##SET = (unsigned int)(bits), TRIS##X##CLR = (unsigned int)(bits))
+#define portOpenDrainClose(X, bits)         (ODC##X##CLR = (unsigned int)(bits), TRIS##X##SET = (unsigned int)(bits))
+#define PortCloseAll(X)                     (TRIS##X##SET = 0xFFFFFFFF, LAT##X##CLR = 0xFFFFFFFF)
+#define PortCloseBits(X, bits)              (TRIS##X##SET = (unsigned int)(bits), LAT##X##CLR = (unsigned int)(bits))
+#define PortSetPinsAnalogOut(X, outputs)    (TRIS##X##CLR = (unsigned int)(outputs), ANSEL##X##SET = (unsigned int)(outputs))
+#define PortSetPinsAnalogIn(X, inputs)      (TRIS##X##SET = (unsigned int)(inputs),  ANSEL##X##SET = (unsigned int)(inputs))
+#define PortSetPinsDigitalOut(X, outputs)   (TRIS##X##CLR = (unsigned int)(outputs), ANSEL##X##CLR = (unsigned int)(outputs))
+#define PortSetPinsDigitalIn(X, inputs)     (TRIS##X##SET = (unsigned int)(inputs),  ANSEL##X##CLR = (unsigned int)(inputs))
 
 #pragma mark Config
 
