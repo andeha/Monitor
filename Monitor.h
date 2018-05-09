@@ -10,14 +10,14 @@
 
 #define NULL 0
 
-typedef unsigned char uint8_t;
+typedef unsigned char       uint8_t;
 
 #ifdef  __mips__
 typedef unsigned long long  uint32_t;
 typedef long long           int32_t;
 typedef uint32_t            __builtin_uint_t;
 typedef int32_t             __builtin_int_t;
-#elif __x86_64__
+#elif defined __x86_64__
 typedef unsigned long long  uint64_t;
 typedef long long           int64_t;
 typedef unsigned int        uint32_t;
@@ -28,246 +28,199 @@ typedef int64_t             __builtin_int_t;
 
 typedef unsigned short      uint16_t;
 
-template <typename T>
-struct Optional {
+template <typename T> struct Optional { union Option { T inner;
+  __builtin_uint_t no; Option() {};  ~Option() {} } option; Optional(T inner)
+  { option.inner = inner; kind = 0; } Optional(const Optional& other) { kind =
+  other.kind; } Optional() { kind = 1; } static Optional no() { return
+  Optional(); } T * query() const { if (kind != 1) return (T*)&option.inner;
+  else return 0; } __builtin_uint_t kind; };
 
-    union Option { T inner; __builtin_uint_t no; Option() {};  ~Option() {} } option;
+  typedef union {
+     float base2; // 2^–126 to 2^127 or 1.18 × 10^–38 to 3.40 × 10^38
+     struct { int16_t lsh; uint16_t msh; } little_endian;
+     struct { int16_t msh; uint16_t lsh; } big_endian;
+     struct {
+         unsigned mantissa : 23;
+         unsigned exponent :  8;
+         unsigned sign     :  1;
+     } ieee754;
+     uint32_t tetra;
+  } tetra;
 
-    Optional(T inner) { option.inner = inner; kind = 0; }
+  typedef union {
+     double base2; // 2^–1022  2^1023 or 2.23 × 10^–308 to 1.79 × 10^308
+     struct { uint32_t lst; int32_t mst; } little_endian;
+     struct { int32_t mst; uint32_t lst; } big_endian;
+     struct { uint32_t lst; uint32_t mst; } unsigned_little_endian;
+     struct { uint32_t mst; uint32_t lst; } unsigned_big_endian;
+     struct {
+         unsigned mantissal : 32;
+         unsigned mantissah : 20;
+         unsigned exponent  : 11;
+         unsigned sign      :  1;
+     } ieee754;
+ #ifdef __x86_64__
+     uint64_t octa;
+ #endif
+  } octa;
 
-    Optional(const Optional& other) { kind = other.kind; }
-
-    Optional() { kind = 1; }
-
-    static Optional no() { return Optional(); }
-
-    T * query() const { if (kind != 1) return (T*)&option.inner; else return 0; }
-
-    __builtin_uint_t kind;
-
-};
-
-typedef union { // 2^–14 to 2^15 or 3.1 × 10^–5 to 6.50 × 10^4
-    struct { uint8_t lsb; uint8_t msb; } little_endian;
-    struct { uint8_t msb; uint8_t lsb; } big_endian;
-    struct {
-        unsigned mantissa : 10;
-        unsigned exponent :  5;
-        unsigned sign     :  1;
-    } ieee754;
-    uint16_t shortword;
-} half;
-
-typedef union {
-    float value; // 2^–126 to 2^127 or 1.18 × 10^–38 to 3.40 × 10^38
-    struct { half lsh; half msh; } little_endian;
-    struct { half msh; half lsh; } big_endian;
-    struct {
-        unsigned mantissa : 24;
-        unsigned exponent :  8;
-        unsigned sign     :  1;
-    } ieee754;
-    uint32_t longword;
-} longword;
-
-typedef union {
-    double value; // 2^–1022  2^1023 or 2.23 × 10^–308 to 1.79 × 10^308
-    struct { uint32_t lsl; int32_t msl; } little_endian;
-    struct { int32_t msl; uint32_t lsl; } big_endian;
-    struct { uint32_t lsl; uint32_t msl; } unsigned_little_endian;
-    struct { uint32_t msl; uint32_t lsl; } unsigned_big_endian;
-    struct {
-        unsigned mantissal : 32;
-        unsigned mantissah : 20;
-        unsigned exponent  : 11;
-        unsigned sign      :  1;
-    } ieee754;
-#ifdef __x86_64__
-    uint64_t quad;
-#endif
-} quad;
-
-#ifdef  __mips__
-typedef quad uint64_t;
-typedef quad int64_t;
-#endif
+ #ifdef __mips__
+   typedef octa uint64_t;
+   typedef octa int64_t;
+ #endif
 
 #define BITMASK(type) enum : type
 #define INLINED __attribute__((always_inline))
 #define MACRO inline INLINED
 
-MACRO __builtin_uint_t 🔎(__builtin_uint_t var) {
-    return *((__builtin_uint_t *)var); }
+ MACRO __builtin_uint_t 🔎(__builtin_uint_t var) { return *((__builtin_uint_t *)
+  var); }
 
-MACRO __builtin_uint_t&  🔧(__builtin_uint_t var) {
-    return (__builtin_uint_t&)*(__builtin_uint_t *)var; }
+ MACRO __builtin_uint_t&  🔧(__builtin_uint_t var) { return (__builtin_uint_t&)
+  *(__builtin_uint_t *)var; }
 
-MACRO __builtin_uint_t TrailingZeros(__builtin_uint_t x) { if (x == 0) { return
-    8*sizeof(x); } __builtin_uint_t zeros = 0, mask = 1; while (!(x&mask)) {
-    zeros++; mask<<=1; } return zeros; }
+ MACRO __builtin_uint_t TrailingZeros(__builtin_uint_t x) { if (x == 0) { return
+  8*sizeof(x); } __builtin_uint_t zeros = 0, mask = 1; while (!(x&mask)) {
+  zeros++; mask<<=1; } return zeros; }
 
-MACRO __builtin_uint_t MaskAndShift(__builtin_uint_t value, __builtin_uint_t
-    mask) { __builtin_uint_t shift = TrailingZeros(mask); return (mask&value)
-    >> shift; }
+ MACRO __builtin_uint_t MaskAndShift(__builtin_uint_t value, __builtin_uint_t
+  mask) { __builtin_uint_t shift = TrailingZeros(mask); return (mask&value) >>
+  shift; }
 
-MACRO __builtin_uint_t 🔎MaskandShift(__builtin_uint_t var, __builtin_uint_t
-    mask) { return MaskAndShift(🔎(var), mask); }
+ MACRO __builtin_uint_t 🔎MaskandShift(__builtin_uint_t var, __builtin_uint_t
+  mask) { return MaskAndShift(🔎(var), mask); }
 
-MACRO void 🔧(__builtin_uint_t var, __builtin_uint_t mask, __builtin_uint_t 
-	value) { __builtin_uint_t shift = TrailingZeros(mask);
-    __builtin_uint_t secured = value & (mask>>shift);
-    *(__builtin_uint_t *)var &= ~mask;
-    *(__builtin_uint_t *)var |= secured<<shift; }
+ MACRO void 🔧(__builtin_uint_t var, __builtin_uint_t mask, __builtin_uint_t
+  value) { __builtin_uint_t shift = TrailingZeros(mask); __builtin_uint_t
+  secured = value & (mask>>shift); *(__builtin_uint_t *)var &= ~mask;
+  *(__builtin_uint_t *)var |= secured<<shift; }
 
-MACRO void 🔧Toggle(__builtin_uint_t var, __builtin_uint_t msk, 
-	__builtin_uint_t val) { __builtin_uint_t shift = TrailingZeros(msk);
-    __builtin_uint_t secured = val & (msk>>shift);
-    *(__builtin_uint_t *)var ^= secured<<shift; }
+ MACRO void 🔧Toggle(__builtin_uint_t var, __builtin_uint_t mask) {
+  __builtin_uint_t shift = TrailingZeros(mask); __builtin_uint_t secured =
+  mask>>shift; *(__builtin_uint_t *)var ^= secured<<shift; }
 
 extern "C" int printf(const char *eightBitFormat, ...);
 
 #pragma mark - MIPS/PIC32
 
-#pragma mark Resets (0xBF80F600)
+MACRO __builtin_uint_t 🔎Count() { __builtin_uint_t val; asm
+  volatile("mfc0 %0, $9, 0; nop" : "=r" (val)); return val; }
 
-#define RCON    0xBF80F600 // Reset Control Register
-#define RSWRST  0xBF80F610 // Software Reset Register
+extern "C" __builtin_uint_t MIPSCycleCount() { return 🔎Count(); }
+
+#define 🔎𝑀𝑋(symbol) 🔎(PIC32MX_##symbol)
+#define 🔎𝑀𝑍(symbol) 🔎(PIC32MZ_##symbol)
+#define 🔎𝑀𝑍𝐷𝐴(symbol) 🔎(PIC32MZDA_##symbol)
+#define 🔧𝑀𝑍𝐷𝐴(symbol) 🔧(PIC32MZDA_##symbol)
+#define 🔧0𝑀𝑍𝐷𝐴(symbol,msk) 🔧(PIC32MZDA_##symbol##CLR) = PIC32MZDA_##symbol##_##msk
+#define 🔧1𝑀𝑍𝐷𝐴(symbol,msk) 🔧(PIC32MZDA_##symbol##SET) = PIC32MZDA_##symbol##_##msk
+
+#define PIC32SYMBOL(serie,symbol,vaddr)                        \
+  const uint32_t PIC32##serie##_##symbol = vaddr;              \
+  const uint32_t PIC32##serie##_##symbol##SET = (vaddr + 0x4); \
+  const uint32_t PIC32##serie##_##symbol##CLR = (vaddr + 0x8); \
+  const uint32_t PIC32##serie##_##symbol##INV = (vaddr + 0xC);
+ 
+#pragma mark Resets (0xBF80F600)
+ 
+PIC32SYMBOL(MX, RCON,   0xBF80F600) // Reset Control Register
+PIC32SYMBOL(MX, RSWRST, 0xBF80F610) // Software Reset Register
 
 BITMASK (uint32_t) { // RCON
-    RCON_CMR    = 0b1000000000, // Configuration Mismatch Reset
-    RCON_VREGS  = 0b0100000000, // Voltage Regulator Standby Enable
-    RCON_EXTR   = 0b0010000000, // External Reset (MCLR) Pin Flag
-    RCON_SWR    = 0b0001000000, // Software Reset Flag
-    RCON_WDTO   = 0b0000010000, // Watchdog Timer Time-out Flag
-    RCON_SLEEP  = 0b0000001000, // Wake From Sleep Flag
-    RCON_IDLE   = 0b0000000100, // Wake From Idle Flag
-    RCON_BOR    = 0b0000000010, // Brown-out Reset Flag
-    RCON_POR    = 0b0000000001  // Power-on Reset Flag
+  PIC32MX_RCON_CMR    = 0b1000000000, // Configuration Mismatch Reset
+  PIC32MX_RCON_VREGS  = 0b0100000000, // Voltage Regulator Standby Enable
+  PIC32MX_RCON_EXTR   = 0b0010000000, // External Reset (MCLR) Pin Flag
+  PIC32MX_RCON_SWR    = 0b0001000000, // Software Reset Flag
+  PIC32MX_RCON_WDTO   = 0b0000010000, // Watchdog Timer Time-out Flag
+  PIC32MX_RCON_SLEEP  = 0b0000001000, // Wake From Sleep Flag
+  PIC32MX_RCON_IDLE   = 0b0000000100, // Wake From Idle Flag
+  PIC32MX_RCON_BOR    = 0b0000000010, // Brown-out Reset Flag
+  PIC32MX_RCON_POR    = 0b0000000001  // Power-on Reset Flag
 };
 
 BITMASK (uint32_t) { // RSWRST
-    RSWRST_SWRST = 0b0000000001 // Software Reset Trigger
+    PIC32MX_RSWRST_SWRST = 0b1 // Software Reset Trigger
 };
 
 #pragma mark Interrupts (0xBF881000)
 
-#define INTSTAT     0xBF881010 // Interrupt Status Register
-#define INTSTATCLR  0xBF881014
-#define INTSTATSET  0xBF881018
+PIC32SYMBOL(MX, INTSTAT, 0xBF881010) // Interrupt Status Register
 
 BITMASK (uint32_t) { // INTSTAT
-    INTSTAT_SRIPL_3͞ = 0b11100000000, // Requested Priority Level
-    INTSTAT_VEC_6͞   = 0b00000111111  // Interrupt Vector
+    PIC32MX_INTSTAT_SRIPL_3͞ = 0b11100000000, // Requested Priority Level
+    PIC32MX_INTSTAT_VEC_6͞   = 0b00000111111  // Interrupt Vector
 };
 
-#pragma mark The UART 1 - UART 6 (0xBF806000)
+#pragma mark The UART
 
-#define U5MODE          0xBF806a00 // UARTx Mode Register
-#define U5STA           0xBF806a10 // UARTx Status and Control Register
-#define U5TXREG         0xBF806a20 // UARTx Transmit Register
-#define U5RXREG         0xBF806a30 // UARTx Receive Register
-#define U5BRG           0xBF806a40 // UARTx Baud Rate Register
+PIC32SYMBOL(MX, U5MODE,  0xBF806a00) // UARTx Mode Register
+PIC32SYMBOL(MX, U5STA,   0xBF806a10) // UARTx Status and Control Register
+PIC32SYMBOL(MX, U5TXREG, 0xBF806a20) // UARTx Transmit Register
+PIC32SYMBOL(MX, U5RXREG, 0xBF806a30) // UARTx Receive Register
+PIC32SYMBOL(MX, U5BRG,   0xBF806a40) // UARTx Baud Rate Register
 
 BITMASK (uint32_t) { // UxMODE
-    UxMODE_ON       = 0b1000000000000000, // UARTx Enable bit
-    UxMODE_SIDL     = 0b0010000000000000, // Stop in Idle Mode
-    UxMODE_IREN     = 0b0001000000000000, // IrDA Encoder and Decoder Enable
-    UxMODE_RTSMD    = 0b0000100000000000, // Mode Selection for UxRTS Pin bit
-    UxMODE_UEN_2͞    = 0b0000011000000000, // UARTx Enable
-    UxMODE_WAKE     = 0b0000000010000000, // Enable Wake-up on Start bit Detect During Sleep Mode
-    UxMODE_LPBACK   = 0b0000000001000000, // UARTx Loopback Mode Select
-    UxMODE_ABAUD    = 0b0000000000100000, // Auto-Baud Enable
-    UxMODE_RXINV    = 0b0000000000010000, // Receive Polarity Inversion
-    UxMODE_BRGH     = 0b0000000000001000, // High Baud Rate Enable
-    UxMODE_PDSEL_2͞  = 0b0000000000000110, // Parity and Data Selection. E.g 00 = 8-bit data, no parity
-    UxMODE_STSEL    = 0b0000000000000001  // Stop Selection. 1 = 2 Stop bits. 0 = 1 Stopbit
+  PIC32MX_UxMODE_ON       = 0b1000000000000000, // UARTx Enable bit
+  PIC32MX_UxMODE_SIDL     = 0b0010000000000000, // Stop in Idle Mode
+  PIC32MX_UxMODE_IREN     = 0b0001000000000000, // IrDA Encoder and Decoder Enable
+  PIC32MX_UxMODE_RTSMD    = 0b0000100000000000, // Mode Selection for UxRTS Pin bit
+  PIC32MX_UxMODE_UEN_2͞    = 0b0000011000000000, // UARTx Enable
+  PIC32MX_UxMODE_WAKE     = 0b0000000010000000, // Enable Wake-up on Start bit Detect During Sleep Mode
+  PIC32MX_UxMODE_LPBACK   = 0b0000000001000000, // UARTx Loopback Mode Select
+  PIC32MX_UxMODE_ABAUD    = 0b0000000000100000, // Auto-Baud Enable
+  PIC32MX_UxMODE_RXINV    = 0b0000000000010000, // Receive Polarity Inversion
+  PIC32MX_UxMODE_BRGH     = 0b0000000000001000, // High Baud Rate Enable
+  PIC32MX_UxMODE_PDSEL_2͞  = 0b0000000000000110, // Parity and Data Selection. E.g 00 = 8-bit data, no parity
+  PIC32MX_UxMODE_STSEL    = 0b0000000000000001  // Stop Selection. 1 = 2 Stop bits. 0 = 1 Stopbit
 };
 
 BITMASK (uint32_t) { // UxSTA
-    UxSTA_ADM_EN    = 0b1000000000000000000000000, // Automatic Address Detect Mode Enable
-    UxSTA_ADDR_8͞    = 0b0111111110000000000000000, // Automatic Address Mask
-    UxSTA_UTXISEL_2͞	= 0b0000000001100000000000000, // TX Interrupt Mode Selection
-    UxSTA_UTXINV    = 0b0000000000010000000000000, // Transmit Polarity Inversion
-    UxSTA_URXEN     = 0b0000000000001000000000000, // Receiver Enable
-    UxSTA_UTXBRK    = 0b0000000000000100000000000, // Transmit Break
-    UxSTA_UTXEN     = 0b0000000000000010000000000, // Transmit Enable
-    UxSTA_UTXBF     = 0b0000000000000001000000000, // Transmit Buffer Full Status
-    UxSTA_TRMT      = 0b0000000000000000100000000, // Transmit Shift Register is Empty
-    UxSTA_URXISEL_2͞ = 0b0000000000000000011000000, // Receive Interrupt Mode Selection
-    UxSTA_ADDEN     = 0b0000000000000000000100000, // Address Character Detect
-    UxSTA_RIDLE     = 0b0000000000000000000010000, // Receiver Idle
-    UxSTA_PERR      = 0b0000000000000000000001000, // Parity Error Status
-    UxSTA_FERR      = 0b0000000000000000000000100, // Framing Error Status
-    UxSTA_OERR      = 0b0000000000000000000000010, // Receive Buffer Overrun Error Status
-    UxSTA_URXDA     = 0b0000000000000000000000001  // Receive Buffer Data Available
+  PIC32MX_UxSTA_ADM_EN    = 0b1000000000000000000000000, // Automatic Address Detect Mode Enable
+  PIC32MX_UxSTA_ADDR_8͞    = 0b0111111110000000000000000, // Automatic Address Mask
+  PIC32MX_UxSTA_UTXISEL_2͞ = 0b0000000001100000000000000, // TX Interrupt Mode Selection
+  PIC32MX_UxSTA_UTXINV    = 0b0000000000010000000000000, // Transmit Polarity Inversion
+  PIC32MX_UxSTA_URXEN     = 0b0000000000001000000000000, // Receiver Enable
+  PIC32MX_UxSTA_UTXBRK    = 0b0000000000000100000000000, // Transmit Break
+  PIC32MX_UxSTA_UTXEN     = 0b0000000000000010000000000, // Transmit Enable
+  PIC32MX_UxSTA_UTXBF     = 0b0000000000000001000000000, // Transmit Buffer Full Status
+  PIC32MX_UxSTA_TRMT      = 0b0000000000000000100000000, // Transmit Shift Register is Empty
+  PIC32MX_UxSTA_URXISEL_2͞ = 0b0000000000000000011000000, // Receive Interrupt Mode Selection
+  PIC32MX_UxSTA_ADDEN     = 0b0000000000000000000100000, // Address Character Detect
+  PIC32MX_UxSTA_RIDLE     = 0b0000000000000000000010000, // Receiver Idle
+  PIC32MX_UxSTA_PERR      = 0b0000000000000000000001000, // Parity Error Status
+  PIC32MX_UxSTA_FERR      = 0b0000000000000000000000100, // Framing Error Status
+  PIC32MX_UxSTA_OERR      = 0b0000000000000000000000010, // Receive Buffer Overrun Error Status
+  PIC32MX_UxSTA_URXDA     = 0b0000000000000000000000001  // Receive Buffer Data Available
 };
 
 BITMASK (uint32_t) { // UxTXREG
-    UxRXREG_TX8   = 0b100000000,
-    UxTXREG_TX_8͞  = 0b011111111 // Transmit register
+  PIC32MX_UxRXREG_TX8   = 0b100000000,
+  PIC32MX_UxTXREG_TX_8͞  = 0b011111111 // Transmit register
 };
 
 BITMASK (uint32_t) { // UxRXREG
-    UxRXREG_RX8   = 0b100000000,
-    UxTXREG_RX_8͞  = 0b011111111 // Recieve register
+  PIC32MX_UxRXREG_RX8   = 0b100000000,
+  PIC32MX_UxTXREG_RX_8͞  = 0b011111111 // Recieve register
 };
 
 BITMASK (uint32_t) { // UxBRG
-    UxBRG_BRG_1͞6͞ = 0b1111111111111111 // Baud Rate Divison
+  PIC32MX_UxBRG_BRG_1͞6͞ = 0b1111111111111111 // Baud Rate Divison
 };
 
-#pragma mark General purpose I/O PORT A - PORT G (0xBF886000, 0xBF886040, ...)
-
+#pragma mark - General purpose I/O PORT A - PORT G (0xBF886000, 0xBF886040, ...)
+ 
 /*  TRIS is a Data Direction or Tri-State Control register that determines 
- whether a digital pin is an input or an output. '1' configures the 
- corresponding I/O pin as an input. */ 
-#define TRISA       0xBF886000
-#define TRISACLR    0xBF886004
-#define TRISASET    0xBF886008
-#define TRISAINV    0xBF88600C
+  whether a digital pin is an input or an output. '1' configures the 
+  corresponding I/O pin as an input. */ 
+PIC32SYMBOL(PIC32MZDA, TRISA,  0xBF886000)
 /*  PORT is the register used to read the current state of the signal applied to	
- the port I/O pins. */
-#define PORTA       0xBF886010
-#define PORTACLR    0xBF886014
-#define PORTASET    0xBF886018
-#define PORTAINV    0xBF88601C
+  the port I/O pins. */
+PIC32SYMBOL(PIC32MZDA, PORTA,  0xBF886010)
 /*  LAT is the register used to write data to the port I/O pins. Reading the LATx
- Latch register reads the last value written to the corresponding PORTor Latch 
- register. */ 
-#define LATA        0xBF886020
-#define LATACLR     0xBF886024
-#define LATASET     0xBF886028
-#define LATAINV     0xBF88602C
-#define ODCA        0xBF886030
-#define ODCACLR     0xBF886034
-#define ODCASET     0xBF886038
-#define ODCAINV     0xBF88603C
-
-/**
-
-'Every I/O module register has a corresponding Clear (CLR), Set (SET) and
- Invert (INV) register providing atomic bit manipulation. A value written to
- a SET, CLR or INV register effectively performs the implied operation,
- but only on the corresponding base register and only bits specified as
- ‘1’ are modified. Bits specified as ‘0’ are not modified.
-
- Pins are configured as digital inputs by setting the corresponding TRIS
- register bits = 1. When configured as inputs, they are either TTL buffers or
- Schmitt Triggers. Several digital pins share functionality with analog
- inputs and default to the analog inputs at POR. Setting the corresponding
- bit in the AD1PCFG register = 1 enables the pin as a digital pin.
-
- Certain pins can be configured as analog inputs/outputs used by the ADC and
- comparator modules. Setting the corresponding bits in the AD1PCFG register
- equal to '0' enables the pin as an analog input pin and must have the
- corresponding TRIS bit set = 1 (input).
-
- Pins are configured as digital outputs by setting the corresponding TRIS
- register bits = 0. When configured as digital outputs, these pins are CMOS
- drivers or can be configured as open-drain outputs by setting the
- corresponding bits in the Open-Drain Configuration (ODCx) register.'
-
-*/
+  Latch register reads the last value written to the corresponding PORTor Latch 
+  register. */ 
+PIC32SYMBOL(PIC32MZDA, LATA,   0xBF886020)
+PIC32SYMBOL(PIC32MZDA, ODCA,   0xBF886030)
 
 #define PortSetDirection(X, tris)           (*((uint32_t *)TRIS##X) = (uint16_t)(tris))
 #define PortGetDirection(X)                 (TRIS##X)
@@ -278,7 +231,7 @@ BITMASK (uint32_t) { // UxBRG
 #define PortClearBits(X, bits)              (*((uint32_t *)LAT##X##CLR) = (uint32_t)(bits))
 #define PortToggleBits(X, bits)             (*((uint32_t *)LAT##X##INV) = (uint32_t)(bits))
 #define PortOpenDrainOpen(X, bits)          (ODC##X##SET = (unsigned int)(bits), TRIS##X##CLR = (unsigned int)(bits))
-#define portOpenDrainClose(X, bits)         (ODC##X##CLR = (unsigned int)(bits), TRIS##X##SET = (unsigned int)(bits))
+#define PortOpenDrainClose(X, bits)         (ODC##X##CLR = (unsigned int)(bits), TRIS##X##SET = (unsigned int)(bits))
 #define PortCloseAll(X)                     (TRIS##X##SET = 0xFFFFFFFF, LAT##X##CLR = 0xFFFFFFFF)
 #define PortCloseBits(X, bits)              (TRIS##X##SET = (unsigned int)(bits), LAT##X##CLR = (unsigned int)(bits))
 #define PortSetPinsAnalogOut(X, outputs)    (TRIS##X##CLR = (unsigned int)(outputs), ANSEL##X##SET = (unsigned int)(outputs))
@@ -684,21 +637,9 @@ SimpleDataBreakpoint(
     //🔧DBC(oneToFifteen, IBCx_BE, 0b1);
 }
 
-// A tuple breakpoint is the logical AND of a data breakpoint and an instruction
-// breakpoint.
-
 /*
  
- The on-chip SRAM or trace memory is written continuously as a circular buffer.
- It is accessible via drseg address mapped registers. There are registers for
- the read pointer, write pointer, and trace word. The write pointer register
- includes a wrap bit that indicates that the pointer has wrapped since the last
- time the register was written. Before starting trace, the write pointer
- would typically be set to 0. To read the trace memory, the read pointer should
- be set to 0 if there has not been a wrap, or to the value of the write pointer
- if there has been. Reading the trace word register will read the entry pointed
- to by the read pointer and will automatically increment the read pointer.
- Software can continue reading until all valid entries have been read out.
+ The on-chip SRAM or trace memory is a circular buffer accessible via drseg.
  
  */
 
@@ -711,9 +652,9 @@ MACRO __builtin_uint_t * LastiFlowTraceWord() { return (__builtin_uint_t *)🔎(
 
 /**
  
- Enable/disable single-stepping the code. When single-step mode is enabled, a
- Debug Single Step exception (EJTAG_debug) occurs each time the processor has
- taken a single execution step in Non-Debug Mode.
+ When single-step mode is enabled, a Debug Single Step exception (EJTAG_debug) 
+ occurs each time the processor has taken a single execution step in Non-Debug 
+ Mode.
  
  */
 
@@ -741,7 +682,7 @@ Disassemble(
     __builtin_uint_t value
 );
 
-#define SDBBP(code) /* asm volatile("sdbbp " #code); */ asm volatile("mfc0 $8, $23, 0; or $8, 0x40000000; mtc0 $8, $23, 0");
+#define SDBBP(code) asm volatile("mfc0 $8, $23, 0; or $8, 0x40000000; mtc0 $8, $23, 0");
 #define BREAK(code) asm volatile("break " #code);
 
 #endif
