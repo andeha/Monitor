@@ -3,13 +3,16 @@
 optFlags = -g
 
 # Two binaries for the PIC32MX family.
-monitor    = monitor_pic32MX795F512L
-nomonitor  = nomonitor_MX
-loadscript = ./PIC32MX795F512L.ld
+# monitor    = monitor_pic32mx795F512L
+# nomonitor  = nomonitor_MX
+# loadscript = ./pic32mx795F512L.ld
+# platflags  = -D__MX__
+
 # ... and two binaries for the MZ.
-# monitor    = monitor_PIC32MZ2064DAH169
-# nomonitor  = nomonitor_MZ
-# loadscript = ./PIC32MZ2064DAH169.ld
+monitor    = monitor_pic32mz2064DAH169
+nomonitor  = nomonitor_MZ
+loadscript = ./pic32mz2064DAH169.ld
+platflags  = -D__MZ__
 
 # Monitor or nomonitor, that is one question.
 progname = $monitor
@@ -18,7 +21,7 @@ progname = $monitor
 objsdir = ./.objs/7703a312-5599-44aa-A992-eabcf7f87663_$progname
 tools = /Users/andershansson/Projects/mips-tools
 sha1git = `git log -1 '--pretty=format:%h'`
-flags = $optFlags -target mipsel -mips32r2 -fno-rtti -fno-exceptions -fblocks
+flags = $optFlags -target mipsel -mips32r2 -fno-rtti -fno-exceptions -fblocks $platflags
 
 rule cc
     command = $tools/clang-6.0 -DSHA1GIT=\"$sha1git\" -MD -MF $out.d $flags --std=c++17 -c $in -o $out
@@ -34,7 +37,7 @@ rule asm
     command = $tools/clang-6.0 $flags -c $in -o $out
 
 rule link
-    command = $tools/ld.lld -T $loadscript -o $out $in; $tools/llvm2pic32 $progname> Releases/$progname\_$sha1git.hex
+    command = $tools/ld.lld -T $loadscript -o $out $in; $tools/llvm2pic32 $progname > Releases/$progname\_$sha1git.hex
 
 rule emitsize
     command = $tools/llvm-size $progname
