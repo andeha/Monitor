@@ -97,7 +97,7 @@ Other useful targets available in the build file are:
 
 ## MIPS Assembly in Source Files
 
-The following example illustrates how to include assembly code in your source files:
+The following example illustrates one method to include assembly code in your source files:
 
     #include <Freeform.h>
     
